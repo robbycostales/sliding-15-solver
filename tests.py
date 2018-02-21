@@ -3,6 +3,7 @@ import sys
 import random
 import ast
 from queue import PriorityQueue
+import time
 
 # python3
 #import queue
@@ -103,13 +104,55 @@ def heuristicGood(state):
 
 
 
+
+def stateToRowRep(state):
+    stateDict = [{}, {}, {}, {}]
+    for i in range(0, 13, 4):
+        for j in range(3):
+            if state[i+j] <= 4:
+                stateDict[i]["A"] += 1
+            elif state[i+j] <= 8:
+                stateDict[i]["B"] += 1
+            elif state[i+j] <= 12:
+                stateDict[i]["C"] += 1
+            elif state[i+j] <= 16:
+                stateDict[i]["D"] += 1
+    return stateDict
+
+
+
+def stateToColRep(state):
+    return 0
+
+
+def heuristicWalkingDistance(state):
+    """
+    given a state, what is the walking distance heuristic value?
+    """
+
+    return -1
+
+
+def rankInExplored(state, dictionary):
+    """
+    Checks if a state's rank is in given dictionary
+    """
+    rank = rankPerm(state)
+    if str(rank) in dictionary:
+        return True, rank
+    else:
+        return False, rank
+
+
 def AStar(S, neighborhoodFn, goalFn, visitFn, heuristicFn):
     global maxTime
     startTime = time.time()
 
     frontier = PriorityQueue()
+
     for s in S:
         frontier.put((0, [s]))
+        explored[str(rankPerm(s))] = 1
 
     while frontier.qsize() > 0:
         (_, path) = frontier.get()
@@ -127,7 +170,9 @@ def AStar(S, neighborhoodFn, goalFn, visitFn, heuristicFn):
         else:
             neighborhood = neighborhoodFn(node)
             for neighbor in neighborhood:
-                if neighbor not in path:
+                boo, rank = rankInExplored(neighbor, explored)
+                if str(rank) not in explored:
+                    explored[str(rank)] = 1
                     newPath = path + [neighbor]
                     pastCost = len(newPath)-1
                     futureCost = heuristicFn(neighbor)
@@ -190,41 +235,20 @@ def doNothing(path):
 
 if __name__ == "__main__":
     global maxTime
+    global explored
 
-    solved5 = 0
-    solved30 = 0
-    solved100 = 0
-
+    explored = {}
     maxTime = 100
-    numTests = 10
+    # Make a random state.
+    state = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+    random.shuffle(state)
+    while not isSolvable(state):
+         random.shuffle(state)
 
-    for test in range(numTests):
+    # state = scrambler(state, 150)
 
-        # Make a random state.
-        state = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        random.shuffle(state)
-        while not isSolvable(state):
-            random.shuffle(state)
-
-        print("\nRunning test " + str(test+1) + " out of " + str(numTests))
-        print15(state)
-        print("has rank " + str(rankPerm(state)))
-
-        [runTime, path] = AStar([state], neighbors, isGoal, doNothing, heuristicGood)
-        if runTime == -1:
-            print("no solution found")
-            continue
-        else:
-            print("solved in " + str(len(path)-1) + " moves")
-            print("solved in " + str(runTime) + " seconds")
-
-        if runTime <= 101:
-            solved100 += 1
-        if runTime <= 30:
-            solved30 += 1
-        if runTime <= 5:
-            solved5 += 1
-
-    print("Solved in 5 seconds: " + str(solved5) + "/" + str(numTests))
-    print("Solved in 30 seconds: " + str(solved30) + "/" + str(numTests))
-    print("Solved in 100 seconds: " + str(solved100) + "/" + str(numTests))
+    print15(state)
+    print("has rank " + str(rankPerm(state)))
+    [runTime, path] = AStar([state], neighbors, isGoal, doNothing, heuristicGood)
+    print15s(path)
+    print("runTime: ", runTime)
