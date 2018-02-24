@@ -4,6 +4,7 @@ import random
 import ast
 from queue import PriorityQueue
 import time
+import createTables as cT
 
 # python3
 #import queue
@@ -11,6 +12,21 @@ import time
 
 def isGoal(state):
     return state == [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+
+def transpose(og):
+    return [list(x) for x in zip(*og)]
+
+def unFlatten(state):
+    """
+    turn 1x16 list to 4x4 list
+    """
+    conv = []
+    for i in range(4):
+        temp = []
+        for j in range(4):
+            temp.append(state[4*i+j])
+        conv.append(temp)
+    return conv
 
 def neighbors(state):
     neighborhood = []
@@ -40,6 +56,8 @@ def neighbors(state):
 
     return neighborhood
 
+
+
 def print15(state):
     for row in range(4):
         for col in range(4):
@@ -49,6 +67,8 @@ def print15(state):
             sys.stdout.write("\t")
         print("")
 
+
+
 def print15s(path):
     for i, state in enumerate(path):
         print("step " + str(i))
@@ -56,14 +76,27 @@ def print15s(path):
         print("")
 
 
-# TODO: don't regenerate previously generated states
 def scrambler(state, n):
+    sExplored = {}
     for step in range(n):
         neighborList = neighbors(state)
+
+        # # don't regenerate previously generated states
+        newNeighbors = []
+        for i in neighborList:
+            boo, rank = rankInExplored(i, sExplored)
+            if not boo:
+                newNeighbors.append(i)
+        neighborList = newNeighbors
+
         num = len(neighborList)
         nextNeighbor = neighborList[random.randint(0, num-1)]
         state = nextNeighbor
+
+        boo, rank = rankInExplored(state, sExplored)
+        sExplored[str(rank)] = 1
     return state
+
 
 
 def levelInput():
@@ -103,34 +136,67 @@ def heuristicGood(state):
     return total
 
 
+def numInCommon(list1, list2):
+    """
+    returns how many elements in common these two lists have
+    """
+    return len(list(set(list1).intersection(list2)))
 
 
-def stateToRowRep(state):
-    stateDict = [{}, {}, {}, {}]
-    for i in range(0, 13, 4):
-        for j in range(3):
-            if state[i+j] <= 4:
-                stateDict[i]["A"] += 1
-            elif state[i+j] <= 8:
-                stateDict[i]["B"] += 1
-            elif state[i+j] <= 12:
-                stateDict[i]["C"] += 1
-            elif state[i+j] <= 16:
-                stateDict[i]["D"] += 1
-    return stateDict
+def convertWD(state, orientation="vert"):
+    """
+    returns rank of the WD state for vert orientation
+    user orientation = horiz for horizontal (basically just tranposes things)
+    """
+
+    # zero because we want 4, 4, 4, 3 in goal rep not 4, 4, 4, 4
+    # would normally be 16
+    goal =  [[1, 2, 3, 4],
+            [5, 6, 7, 8],
+            [9, 10, 11, 12],
+            [13, 14, 15, 0]]
+
+    # converting 1-list to 2-list
+    conv = []
+    for i in range(4):
+        temp = []
+        for j in range(4):
+            temp.append(state[4*i+j])
+        conv.append(temp)
+
+    if orientation == "horiz":
+        goal = transpose(goal)
+        conv = transpose(conv)
+
+    # check intersection in each row, create 1-D list to rank
+    ints = []
+    for i in conv:
+        for j in goal:
+            ints.append(numInCommon(i, j))
+
+    # find rank of the WD state created
+    rank = rankPerm(ints)
+
+    return rank
 
 
-
-def stateToColRep(state):
-    return 0
-
-
-def heuristicWalkingDistance(state):
+def heuristicWD(state):
     """
     given a state, what is the walking distance heuristic value?
     """
+    vertRank = convertWD(state, "vert")
+    horizRank = convertWD(state, "horiz")
 
-    return -1
+    try:
+        y = vertWDRanks[str(horizRank)]
+        x = vertWDRanks[str(vertRank)]
+    except:
+        x=35
+        y=35
+        print("invalid dictionary key")
+
+    return x+y
+
 
 
 def rankInExplored(state, dictionary):
@@ -142,6 +208,7 @@ def rankInExplored(state, dictionary):
         return True, rank
     else:
         return False, rank
+
 
 
 def AStar(S, neighborhoodFn, goalFn, visitFn, heuristicFn):
@@ -236,19 +303,25 @@ def doNothing(path):
 if __name__ == "__main__":
     global maxTime
     global explored
+    global vertWDRanks
+
+    print("creating tables...")
+    vertWDRanks = cT.createTables()
 
     explored = {}
     maxTime = 100
     # Make a random state.
     state = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-    random.shuffle(state)
-    while not isSolvable(state):
-         random.shuffle(state)
+    # random.shuffle(state)
+    # while not isSolvable(state):
+    #      random.shuffle(state)
+    #
+    # # state = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 15]
 
-    # state = scrambler(state, 150)
+    state = scrambler(state, 70)
 
     print15(state)
     print("has rank " + str(rankPerm(state)))
-    [runTime, path] = AStar([state], neighbors, isGoal, doNothing, heuristicGood)
+    [runTime, path] = AStar([state], neighbors, isGoal, doNothing, heuristicWD)
     print15s(path)
     print("runTime: ", runTime)

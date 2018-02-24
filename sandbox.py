@@ -1,3 +1,16 @@
 import tests as t
+import time
+import createTables as cT
 
-print(t.stateToRowRep([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]))
+initial =   [[14, 4, 11, 10],
+            [12, 9, 13, 5],
+            [1, 2, 7, 15],
+            [3, 8, 16, 6]]
+
+state = [14, 4, 11, 10, 12, 9, 13, 5, 1, 2, 7, 15, 3, 8, 16, 6]
+
+r1 = cT.rankPerm(initial)
+r2 = cT.rankPerm(state)
+
+print(r1)
+print(r2)
