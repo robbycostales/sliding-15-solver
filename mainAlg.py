@@ -3,6 +3,8 @@ import sys
 import random
 import ast
 from queue import PriorityQueue
+import time
+import createTables as cT
 
 # python3
 #import queue
@@ -10,6 +12,21 @@ from queue import PriorityQueue
 
 def isGoal(state):
     return state == [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+
+def transpose(og):
+    return [list(x) for x in zip(*og)]
+
+def unFlatten(state):
+    """
+    turn 1x16 list to 4x4 list
+    """
+    conv = []
+    for i in range(4):
+        temp = []
+        for j in range(4):
+            temp.append(state[4*i+j])
+        conv.append(temp)
+    return conv
 
 def neighbors(state):
     neighborhood = []
@@ -39,6 +56,8 @@ def neighbors(state):
 
     return neighborhood
 
+
+
 def print15(state):
     for row in range(4):
         for col in range(4):
@@ -48,6 +67,8 @@ def print15(state):
             sys.stdout.write("\t")
         print("")
 
+
+
 def print15s(path):
     for i, state in enumerate(path):
         print("step " + str(i))
@@ -55,14 +76,27 @@ def print15s(path):
         print("")
 
 
-# TODO: don't regenerate previously generated states
 def scrambler(state, n):
+    sExplored = {}
     for step in range(n):
         neighborList = neighbors(state)
+
+        # # don't regenerate previously generated states
+        newNeighbors = []
+        for i in neighborList:
+            boo, rank = rankInExplored(i, sExplored)
+            if not boo:
+                newNeighbors.append(i)
+        neighborList = newNeighbors
+
         num = len(neighborList)
         nextNeighbor = neighborList[random.randint(0, num-1)]
         state = nextNeighbor
+
+        boo, rank = rankInExplored(state, sExplored)
+        sExplored[str(rank)] = 1
     return state
+
 
 
 def levelInput():
@@ -102,14 +136,96 @@ def heuristicGood(state):
     return total
 
 
+def numInCommon(list1, list2):
+    """
+    returns how many elements in common these two lists have
+    """
+    return len(list(set(list1).intersection(list2)))
+
+
+def convertWD(state, orientation="vert"):
+    """
+    returns rank of the WD state for vert orientation
+    user orientation = horiz for horizontal (basically just tranposes things)
+    """
+
+    # zero because we want 4, 4, 4, 3 in goal rep not 4, 4, 4, 4
+    # would normally be 16
+    goal =  [[1, 2, 3, 4],
+            [5, 6, 7, 8],
+            [9, 10, 11, 12],
+            [13, 14, 15, 0]]
+
+    # converting 1-list to 2-list
+    conv = []
+    for i in range(4):
+        temp = []
+        for j in range(4):
+            temp.append(state[4*i+j])
+        conv.append(temp)
+
+    if orientation == "horiz":
+        goal = transpose(goal)
+        conv = transpose(conv)
+
+    # check intersection in each row, create 1-D list to rank
+    ints = []
+    for i in conv:
+        for j in goal:
+            ints.append(numInCommon(i, j))
+
+    # find rank of the WD state created
+    rank = rankPerm(ints)
+
+    return rank, unFlatten(ints)
+
+
+def heuristicWD(state):
+    """
+    given a state, what is the walking distance heuristic value?
+    """
+    vertRank, m1 = convertWD(state, "vert")
+    horizRank, m2 = convertWD(state, "horiz")
+
+    try:
+        x = vertWDRanks[str(vertRank)]
+    except:
+        x = 35
+        print("invalid dictionary key for:")
+        print("vert:", m1)
+
+    try:
+        y = vertWDRanks[str(horizRank)]
+    except:
+        y = 35
+        print("invalid dictionary key for:")
+        print("horiz:", m2)
+
+    return x+y
+
+
+
+def rankInExplored(state, dictionary):
+    """
+    Checks if a state's rank is in given dictionary
+    """
+    rank = rankPerm(state)
+    if str(rank) in dictionary:
+        return True, rank
+    else:
+        return False, rank
+
+
 
 def AStar(S, neighborhoodFn, goalFn, visitFn, heuristicFn):
     global maxTime
     startTime = time.time()
 
     frontier = PriorityQueue()
+
     for s in S:
         frontier.put((0, [s]))
+        explored[str(rankPerm(s))] = 1
 
     while frontier.qsize() > 0:
         (_, path) = frontier.get()
@@ -127,7 +243,9 @@ def AStar(S, neighborhoodFn, goalFn, visitFn, heuristicFn):
         else:
             neighborhood = neighborhoodFn(node)
             for neighbor in neighborhood:
-                if neighbor not in path:
+                boo, rank = rankInExplored(neighbor, explored)
+                if str(rank) not in explored:
+                    explored[str(rank)] = 1
                     newPath = path + [neighbor]
                     pastCost = len(newPath)-1
                     futureCost = heuristicFn(neighbor)
@@ -137,11 +255,30 @@ def AStar(S, neighborhoodFn, goalFn, visitFn, heuristicFn):
     return [-1, None]
 
 
-
-# rankPerm(perm) returns the rank of permutation perm.
-# The rank is done according to Myrvold, Ruskey "Ranking and unranking permutations in linear-time".
-# perm should be a 1-based list, such as [1,2,3,4,5].
 def rankPerm(perm, inverse = None, m = None):
+    """
+    rankPerm(perm) returns the rank of permutation perm.
+    The rank is done according to Myrvold, Ruskey "Ranking and unranking permutations in linear-time".
+    perm should be a 1-based list, such as [1,2,3,4,5].
+
+    However, this function will automatically flatten a 2d array into a 1-based list
+    """
+
+    # Robby's Edits:
+    if type(perm[0]) == type([]):
+        # flattens 2d array
+        perm = sum(perm, [])
+
+
+    # change all 0s to 5s
+    for i in range(len(perm)):
+        if perm[i] == 0:
+            perm[i] = 5
+
+    # end of Robby's edits
+
+    # return str(perm)
+
     # if the parameters are None, then this is the initial call, so set the values
     if inverse == None:
         perm = list(perm) # make a copy of the perm; this algorithm will sort it
@@ -189,42 +326,33 @@ def doNothing(path):
 
 
 if __name__ == "__main__":
+    RANDOM = True
+
     global maxTime
+    global explored
+    global vertWDRanks
 
-    solved5 = 0
-    solved30 = 0
-    solved100 = 0
+    print("creating tables...")
+    vertWDRanks = cT.createTables()
 
+    explored = {}
     maxTime = 100
-    numTests = 10
+    # Make a random state.
+    state = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
 
-    for test in range(numTests):
-
-        # Make a random state.
-        state = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+    if RANDOM:
+        print("creating random state")
         random.shuffle(state)
         while not isSolvable(state):
             random.shuffle(state)
+    else:
+        n = 80
+        state = scrambler(state, 80)
+        print("created "+ str(n) +"-scrambled state")
 
-        print("\nRunning test " + str(test+1) + " out of " + str(numTests))
-        print15(state)
-        print("has rank " + str(rankPerm(state)))
 
-        [runTime, path] = AStar([state], neighbors, isGoal, doNothing, heuristicGood)
-        if runTime == -1:
-            print("no solution found")
-            continue
-        else:
-            print("solved in " + str(len(path)-1) + " moves")
-            print("solved in " + str(runTime) + " seconds")
-
-        if runTime <= 101:
-            solved100 += 1
-        if runTime <= 30:
-            solved30 += 1
-        if runTime <= 5:
-            solved5 += 1
-
-    print("Solved in 5 seconds: " + str(solved5) + "/" + str(numTests))
-    print("Solved in 30 seconds: " + str(solved30) + "/" + str(numTests))
-    print("Solved in 100 seconds: " + str(solved100) + "/" + str(numTests))
+    print15(state)
+    print("has rank " + str(rankPerm(state)))
+    [runTime, path] = AStar([state], neighbors, isGoal, doNothing, heuristicWD)
+    print15s(path)
+    print("runTime: ", runTime)

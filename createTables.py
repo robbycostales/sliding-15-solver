@@ -9,7 +9,7 @@ import ast
 from queue import PriorityQueue
 import time
 import copy
-import pickle
+import mainAlg as mA
 
 
 def transpose(og):
@@ -41,7 +41,7 @@ def BFS(S, neighborhoodFn):
         # put the starting state in the frontier
         frontier.put((0, [s]))
         # set to 0 because the starting state is the goal state
-        explored[str(rankPerm(s))] = 0
+        explored[str(mA.rankPerm(s))] = 0
 
     while frontier.qsize() > 0:
         # while there is stuff in the frontier
@@ -54,13 +54,14 @@ def BFS(S, neighborhoodFn):
         neighborhood = neighborhoodFn(node)
         # we get list of neighbors of our state
         for neighbor in neighborhood:
-            boo, rank = rankInExplored(neighbor, explored)
+            boo, rank = mA.rankInExplored(neighbor, explored)
             if str(rank) not in explored:
                 # val is the current distance from the goal, so cost increments by 1
-                cost = val + 1
-                explored[str(rank)] = cost
+                # cost = val + 1
                 newPath = path + [neighbor]
-                frontier.put((cost, newPath))
+                pastCost = len(newPath) - 1
+                explored[str(rank)] = pastCost
+                frontier.put((pastCost, newPath))
 
     currentTime = time.time()
     return [currentTime - startTime, None]
@@ -122,57 +123,6 @@ def neighbors(state):
                 neighborhood.append(newState)
 
     return neighborhood
-
-
-def rankInExplored(state, dictionary):
-    """
-    Checks if a state's rank is in given dictionary
-    """
-    rank = rankPerm(state)
-    if str(rank) in dictionary:
-        return True, rank
-    else:
-        return False, rank
-
-
-def rankPerm(perm, inverse = None, m = None):
-    """
-    rankPerm(perm) returns the rank of permutation perm.
-    The rank is done according to Myrvold, Ruskey "Ranking and unranking permutations in linear-time".
-    perm should be a 1-based list, such as [1,2,3,4,5].
-
-    However, this function will automatically flatten a 2d array into a 1-based list
-    """
-
-    # Robby's Edits:
-    if type(perm[0]) == type([]):
-        # flattens 2d array
-        perm = sum(perm, [])
-    # end of Robby's edits
-
-
-    # if the parameters are None, then this is the initial call, so set the values
-    if inverse == None:
-        perm = list(perm) # make a copy of the perm; this algorithm will sort it
-        m = len(perm)
-        inverse = [-1]*m
-        for i in range(m):
-            inverse[perm[i]-1] = i+1
-
-    if m == 1:
-        return 0
-    s = perm[m-1]-1
-    x = m-1
-    y = inverse[m-1]-1
-    temp = perm[x]
-    perm[x] = perm[y];
-    perm[y] = temp;
-    x = s
-    y = m-1
-    temp = inverse[x]
-    inverse[x] = inverse[y]
-    inverse[y] = temp
-    return s + m * rankPerm(perm, inverse, m-1)
 
 
 def createTables():

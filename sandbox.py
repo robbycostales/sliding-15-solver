@@ -1,16 +1,13 @@
 import tests as t
 import time
 import createTables as cT
+import random
 
-initial =   [[14, 4, 11, 10],
-            [12, 9, 13, 5],
-            [1, 2, 7, 15],
-            [3, 8, 16, 6]]
+start = time.time()
+for i in range(300000):
+    x = [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5]
+    # x = [0,0,0,1,0,0,2,0,0,0,9,0,4,0,0,8,0,7,0,0]
+    rank = cT.rankPerm(x)
+cur = time.time()
 
-state = [14, 4, 11, 10, 12, 9, 13, 5, 1, 2, 7, 15, 3, 8, 16, 6]
-
-r1 = cT.rankPerm(initial)
-r2 = cT.rankPerm(state)
-
-print(r1)
-print(r2)
+print(cur-start)
