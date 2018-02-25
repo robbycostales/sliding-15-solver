@@ -16,6 +16,8 @@ def isGoal(state):
 def transpose(og):
     return [list(x) for x in zip(*og)]
 
+
+
 def unFlatten(state):
     """
     turn 1x16 list to 4x4 list
@@ -27,6 +29,8 @@ def unFlatten(state):
             temp.append(state[4*i+j])
         conv.append(temp)
     return conv
+
+
 
 def neighbors(state):
     neighborhood = []
@@ -78,23 +82,26 @@ def print15s(path):
 
 def scrambler(state, n):
     sExplored = {}
-    for step in range(n):
-        neighborList = neighbors(state)
+    try:
+        for step in range(n):
+            neighborList = neighbors(state)
 
-        # # don't regenerate previously generated states
-        newNeighbors = []
-        for i in neighborList:
-            boo, rank = rankInExplored(i, sExplored)
-            if not boo:
-                newNeighbors.append(i)
-        neighborList = newNeighbors
+            # # don't regenerate previously generated states
+            newNeighbors = []
+            for i in neighborList:
+                boo, rank = rankInExplored(i, sExplored)
+                if not boo:
+                    newNeighbors.append(i)
+            neighborList = newNeighbors
 
-        num = len(neighborList)
-        nextNeighbor = neighborList[random.randint(0, num-1)]
-        state = nextNeighbor
+            num = len(neighborList)
+            nextNeighbor = neighborList[random.randint(0, num-1)]
+            state = nextNeighbor
 
-        boo, rank = rankInExplored(state, sExplored)
-        sExplored[str(rank)] = 1
+            boo, rank = rankInExplored(state, sExplored)
+            sExplored[str(rank)] = 1
+    except:
+        scrambler(state, n)
     return state
 
 
@@ -157,12 +164,7 @@ def convertWD(state, orientation="vert"):
             [13, 14, 15, 0]]
 
     # converting 1-list to 2-list
-    conv = []
-    for i in range(4):
-        temp = []
-        for j in range(4):
-            temp.append(state[4*i+j])
-        conv.append(temp)
+    conv = unFlatten(state)
 
     if orientation == "horiz":
         goal = transpose(goal)
@@ -326,33 +328,80 @@ def doNothing(path):
 
 
 if __name__ == "__main__":
-    RANDOM = True
+    RANDOM = False
+    TEST = True
+    numTests = 100
 
     global maxTime
     global explored
     global vertWDRanks
 
-    print("creating tables...")
+    print("creating tables...\n")
     vertWDRanks = cT.createTables()
+    print("LENGTH OF DIC")
+    print(len(vertWDRanks))
 
-    explored = {}
-    maxTime = 100
-    # Make a random state.
-    state = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+    if TEST:
+        # like: 5, 30, 100, failed
+        timez = [[], [], [], []]
+        for i in range(numTests):
+            print("test: " + str(i+1) + " / 100", end = "\r")
 
-    if RANDOM:
-        print("creating random state")
-        random.shuffle(state)
-        while not isSolvable(state):
-            random.shuffle(state)
+
+            explored = {}
+            maxTime = 100
+            # Make a random state.
+            state = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+
+            if RANDOM:
+                # print("creating random state")
+                random.shuffle(state)
+                while not isSolvable(state):
+                    random.shuffle(state)
+            else:
+                n = 250
+                state = scrambler(state, n)
+                # print("created "+ str(n) +"-scrambled state")
+
+            [runTime, path] = AStar([state], neighbors, isGoal, doNothing, heuristicWD)
+
+            if runTime < 0:
+                timez[3].append(runTime)
+            if 0 < runTime <=5:
+                timez[0].append(runTime)
+            if 5 < runTime <=30:
+                timez[1].append(runTime)
+            if 30 < runTime <=101:
+                timez[2].append(runTime)
+
+        print("\nUGLY LIST: ")
+        print(timez)
+
+        print("\nNum Unsolved: ", len(timez[3]))
+        print("Num Under 5 secs: ", len(timez[0]))
+        print("Num Under 30 secs: ", len(timez[0]) + len(timez[1]))
+        print("Num Under 100 secs: ", len(timez[0]) + len(timez[1]) + len(timez[2]))
+
+
     else:
-        n = 80
-        state = scrambler(state, 80)
-        print("created "+ str(n) +"-scrambled state")
+        explored = {}
+        maxTime = 100
+        # Make a random state.
+        state = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+
+        if RANDOM:
+            print("creating random state")
+            random.shuffle(state)
+            while not isSolvable(state):
+                random.shuffle(state)
+        else:
+            n = 250
+            state = scrambler(state, n)
+            print("created "+ str(n) +"-scrambled state")
 
 
-    print15(state)
-    print("has rank " + str(rankPerm(state)))
-    [runTime, path] = AStar([state], neighbors, isGoal, doNothing, heuristicWD)
-    print15s(path)
-    print("runTime: ", runTime)
+        print15(state)
+        print("has rank " + str(rankPerm(state)))
+        [runTime, path] = AStar([state], neighbors, isGoal, doNothing, heuristicWD)
+        print15s(path)
+        print("runTime: ", runTime)
