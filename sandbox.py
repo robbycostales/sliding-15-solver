@@ -1,13 +1,20 @@
-import tests as t
+# Date: 2018-02-24
+# Author: Robby Costales
+
+# Purpose: TESTING
 import time
-import createTables as cT
 import random
 
-start = time.time()
-for i in range(300000):
-    x = [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5]
-    # x = [0,0,0,1,0,0,2,0,0,0,9,0,4,0,0,8,0,7,0,0]
-    rank = cT.rankPerm(x)
-cur = time.time()
+# local
+import createTables as ct
+import mainAlgs as ma
+import funcs as fu
 
-print(cur-start)
+state = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 16, 14, 15, 12]
+
+start = time.time()
+for i in range(100000):
+    random.shuffle(state)
+    x = fu.rankPerm(state)
+end = time.time()
+print(end-start)

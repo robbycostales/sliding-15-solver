@@ -9,11 +9,10 @@ import ast
 from queue import PriorityQueue
 import time
 import copy
-import mainAlg as mA
+import pickle
+# local
+import funcs as fu
 
-
-def transpose(og):
-    return [list(x) for x in zip(*og)]
 
 
 def BFS(S, neighborhoodFn):
@@ -22,11 +21,13 @@ def BFS(S, neighborhoodFn):
     breadth first search
 
     Args:
-        S - initial set of states
+        S (nested list) - initial set of states
         neighborhoodFn - returns the neighbors of a given state
 
     Returns:
-        RunTime, Path
+        (runTime, Path) where runTime is the length of the search in seconds
+        and path is a list of states from the initial state to the goal state
+
 
         if error: -1, None
     """
@@ -41,7 +42,7 @@ def BFS(S, neighborhoodFn):
         # put the starting state in the frontier
         frontier.put((0, [s]))
         # set to 0 because the starting state is the goal state
-        explored[str(mA.rankPerm(s))] = 0
+        explored[str(fu.rankPerm(s))] = 0
 
     while frontier.qsize() > 0:
         # while there is stuff in the frontier
@@ -54,7 +55,7 @@ def BFS(S, neighborhoodFn):
         neighborhood = neighborhoodFn(node)
         # we get list of neighbors of our state
         for neighbor in neighborhood:
-            boo, rank = mA.rankInExplored(neighbor, explored)
+            boo, rank = fu.stateInDict(neighbor, explored)
             if str(rank) not in explored:
                 # val is the current distance from the goal, so cost increments by 1
                 # cost = val + 1
@@ -69,9 +70,14 @@ def BFS(S, neighborhoodFn):
 
 def neighbors(state):
     """
-    finds VERTICAL neighbors of the state
+    Finds VERTICAL neighbors of the state (can submit transpose of the state
+    into this function, then transpose result to find horizontal neighbors)
 
-    returns list of neighbors
+    Args:
+        WD state
+
+    Returns:
+        list of neighbors
     """
     # list of new neighbors to be returned after function completion
     neighborhood = []
@@ -125,18 +131,66 @@ def neighbors(state):
     return neighborhood
 
 
-def createTables():
+def createTables(typ=4):
+    """
+    Function that uses the above functions to generate the vertical walking
+    distance dictionary. Technically function should be called "create dictionary"
+    but createTables is more distinct, as there are many dictionaries in use
+
+    Args:
+        typ : type of table to be created. 4 is for the og goal state, but using
+            other states as goals messes this up. The 16 can be in any column, so
+            the '3' is not necessarily in the last diagonal
+
+    Returns:
+        explored : the dictionary where keys are ranks of the WD matrices (for
+        vertical WD, and the values are how many steps from the goal state)
+    """
     global explored
     explored = {}
     # Initial walking distance state
-    initial =   [[4, 0, 0, 0],
-                [0, 4, 0, 0],
-                [0, 0, 4, 0],
-                [0, 0, 0, 3]]
+    print(typ)
+    if typ==1:
+        initial =   [[3, 0, 0, 0],
+                    [0, 4, 0, 0],
+                    [0, 0, 4, 0],
+                    [0, 0, 0, 4]]
+    if typ==2:
+        initial =   [[4, 0, 0, 0],
+                    [0, 3, 0, 0],
+                    [0, 0, 4, 0],
+                    [0, 0, 0, 4]]
+    if typ==3:
+        initial =   [[4, 0, 0, 0],
+                    [0, 4, 0, 0],
+                    [0, 0, 3, 0],
+                    [0, 0, 0, 4]]
+    if typ==4:
+        initial =   [[4, 0, 0, 0],
+                    [0, 4, 0, 0],
+                    [0, 0, 4, 0],
+                    [0, 0, 0, 3]]
+
     [runTime, path] = BFS([initial], neighbors)
 
     return explored
 
 
 if __name__ == "__main__":
+    print("creating tables...")
+    vertWDRanks1 = createTables(typ=1)
+    vertWDRanks2 = createTables(typ=2)
+    vertWDRanks3 = createTables(typ=3)
+    vertWDRanks4 = createTables(typ=4)
+    print(str(len(vertWDRanks1)) + " items created in table 1")
+    print(str(len(vertWDRanks1)) + " items created in table 2")
+    print(str(len(vertWDRanks1)) + " items created in table 3")
+    print(str(len(vertWDRanks1)) + " items created in table 4\n")
+
+
+    TABLES = [vertWDRanks1, vertWDRanks2, vertWDRanks3, vertWDRanks4]
+
+    pickle_out = open("TABLES","wb")
+    pickle.dump(TABLES, pickle_out)
+    pickle_out.close()
     pass
