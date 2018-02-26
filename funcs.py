@@ -88,7 +88,7 @@ def rankPerm(perm, inverse = None, m = None):
 
     # end of Robby's edits
 
-    # return str(perm)
+    return str(perm)
 
     # if the parameters are None, then this is the initial call, so set the values
     if inverse == None:

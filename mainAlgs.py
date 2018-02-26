@@ -441,7 +441,9 @@ def bidirectional(S, G, neighborhoodFn, goalFn, visitFn, heuristicFn):
 
         ### TO ------->>>>>
         # pull from TO queue
-        (_, path) = frontierTo.get()
+        (val, path) = frontierTo.get()
+        # if val > 80:
+        #     continue
         node = path[-1]
 
         # check if node in other dictionary
@@ -476,7 +478,9 @@ def bidirectional(S, G, neighborhoodFn, goalFn, visitFn, heuristicFn):
 
         ### <<<<<------- FROM
         # pull from FROM queue
-        (_, path) = frontierFrom.get()
+        (val, path) = frontierFrom.get()
+        # if val > 80:
+        #     continue
         node = path[-1]
 
         # check if node in other dictionary
@@ -513,11 +517,11 @@ def bidirectional(S, G, neighborhoodFn, goalFn, visitFn, heuristicFn):
 
 
 if __name__ == "__main__":
-    RANDOM = False
+    RANDOM = True
     # number of scrambles
-    N = 40
+    N = 80
     TEST = True
-    numTests = 100
+    numTests = 150
 
     global maxTime
     # for one way search:
@@ -530,6 +534,8 @@ if __name__ == "__main__":
     # for bidirectional search:
     global exploredTo
     global exploredFrom
+
+    maxTime = 100
 
     # load tables from pickle
     print("Loading TABLES from pickle...")
@@ -548,13 +554,11 @@ if __name__ == "__main__":
         # like: 5, 30, 100, failed
         timez = [[], [], [], []]
         for i in range(numTests):
-            print("test: " + str(i+1) + " / 100", end = "\r")
+            print("test: " + str(i+1) + " / " + str(numTests), end = "\r")
 
             exploredTo = {}
             explored = {}
             exploredFrom = {}
-
-            maxTime = 100
             # Make a random state.
             state = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
             goal = copy.deepcopy(state)
@@ -594,8 +598,6 @@ if __name__ == "__main__":
         exploredTo = {}
         explored = {}
         exploredFrom = {}
-
-        maxTime = 100
         # Make a random state.
         state = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
         goal = copy.deepcopy(state)
