@@ -42,7 +42,7 @@ def BFS(S, neighborhoodFn):
         # put the starting state in the frontier
         frontier.put((0, [s]))
         # set to 0 because the starting state is the goal state
-        explored[str(fu.rankPerm(s))] = 0
+        explored[fu.rankPerm(s)] = 0
 
     while frontier.qsize() > 0:
         # while there is stuff in the frontier
@@ -56,12 +56,12 @@ def BFS(S, neighborhoodFn):
         # we get list of neighbors of our state
         for neighbor in neighborhood:
             boo, rank = fu.stateInDict(neighbor, explored)
-            if str(rank) not in explored:
+            if rank not in explored:
                 # val is the current distance from the goal, so cost increments by 1
                 # cost = val + 1
                 newPath = path + [neighbor]
                 pastCost = len(newPath) - 1
-                explored[str(rank)] = pastCost
+                explored[rank] = pastCost
                 frontier.put((pastCost, newPath))
 
     currentTime = time.time()

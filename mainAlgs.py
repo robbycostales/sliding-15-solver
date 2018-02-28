@@ -125,7 +125,7 @@ def scrambler(state, n):
             state = nextNeighbor
 
             boo, rank = fu.stateInDict(state, sExplored)
-            sExplored[str(rank)] = 1
+            sExplored[rank] = 1
     except:
         scrambler(state, n)
     return state
@@ -200,7 +200,7 @@ def convertWD(state, goal = None, orientation="vert"):
         goal : 1-d rep of goal state
         orientation : vertical (vert) vs horizontal (horiz) walking distance
     Returns:
-        rank, state (2d list)
+        rank
 
         rank is rank of WD state (to be searched in table created by
         createTables), and state is just the converted state in matrix form.
@@ -226,20 +226,19 @@ def convertWD(state, goal = None, orientation="vert"):
     # converting 1-list to 2-list
     conv = fu.unFlatten(state)
 
+    # TODO: possibly make this faster by checking numInCommon by slicing rather than transposing
     if orientation == "horiz":
         goal = fu.transpose(goal)
         conv = fu.transpose(conv)
-
     # check intersection in each row, create 1-D list to rank
     ints = []
     for i in conv:
         for j in goal:
-            ints.append(fu.numInCommon(i, j))
+                ints.append(fu.numInCommon(i, j))
 
     # find rank of the WD state created
     rank = fu.rankPerm(ints)
-
-    return rank, fu.unFlatten(ints)
+    return rank
 
 
 def heuristicWD(state, goal=None, typ=4):
@@ -256,21 +255,21 @@ def heuristicWD(state, goal=None, typ=4):
     if goal==None:
         goal = GOAL_STATE
 
-    vertRank, m1 = convertWD(state, goal, "vert")
-    horizRank, m2 = convertWD(state, goal, "horiz")
+    vertRank = convertWD(state, goal, "vert")
+    horizRank = convertWD(state, goal, "horiz")
 
     vertWDRanks = chooseWDDict(goal, ori="vert")
     try:
-        x = vertWDRanks[str(vertRank)]
+        x = vertWDRanks[vertRank]
     except:
-        print("vert", m1)
+        print("vert")
         x = 35
 
     vertWDRanks = chooseWDDict(goal, ori="horiz")
     try:
-        y = vertWDRanks[str(horizRank)]
+        y = vertWDRanks[horizRank]
     except:
-        print("horiz", m2)
+        print("horiz")
         y = 35
 
     return x+y
@@ -329,7 +328,7 @@ def AStar(S, neighborhoodFn, goalFn, visitFn, heuristicFn):
 
     for s in S:
         frontier.put((0, [s]))
-        explored[str(fu.rankPerm(s))] = 1
+        explored[fu.rankPerm(s)] = 1
 
     while frontier.qsize() > 0:
         (_, path) = frontier.get()
@@ -349,7 +348,7 @@ def AStar(S, neighborhoodFn, goalFn, visitFn, heuristicFn):
             for neighbor in neighborhood:
                 boo, rank = fu.stateInDict(neighbor, explored)
                 if not boo:
-                    explored[str(rank)] = 1
+                    explored[rank] = 1
                     newPath = path + [neighbor]
                     pastCost = len(newPath)-1
                     futureCost = heuristicFn(neighbor)
@@ -416,8 +415,9 @@ def bidirectional(S, G, neighborhoodFn, goalFn, visitFn, heuristicFn):
 
         If something goes wrong, returns: -1, None
     """
-
     global maxTime
+    global pastConstant
+
     startTime = time.time()
 
     # paths to goal state
@@ -428,12 +428,12 @@ def bidirectional(S, G, neighborhoodFn, goalFn, visitFn, heuristicFn):
     # put initial state's path in TO queue
     for s in S:
         frontierTo.put((0, [s]))
-        exploredTo[str(fu.rankPerm(s))] = 1
+        exploredTo[fu.rankPerm(s)] = 1
 
     # put initial state's path in TO queue
     for g in G:
         frontierFrom.put((0, [g]))
-        exploredFrom[str(fu.rankPerm(g))] = 1
+        exploredFrom[fu.rankPerm(g)] = 1
 
     while frontierFrom.qsize() > 0 and frontierTo.qsize() > 0:
         # print(frontierTo.qsize(), frontierFrom.qsize(), end="\r")
@@ -472,19 +472,18 @@ def bidirectional(S, G, neighborhoodFn, goalFn, visitFn, heuristicFn):
             for neighbor in neighborhood:
                 boo, rank = fu.stateInDict(neighbor, exploredTo)
                 if not boo:
-                    exploredTo[str(rank)] = 1
+                    exploredTo[rank] = 1
                     newPath = path + [neighbor]
-                    pastCost = len(newPath)-1
+                    pastCost = (len(newPath)-1)/pastConstant
                     # goal = None means distance to normal goal state
                     futureCost = heuristicFn(neighbor, goal=None)
                     totalCost = pastCost + futureCost
-                    frontierTo.put((totalCost, newPath))
+                    if totalCost < BRANCH_BOUND:
+                        frontierTo.put((totalCost, newPath))
 
         ### <<<<<------- FROM
         # pull from FROM queue
         (val, path) = frontierFrom.get()
-        # if val > 80:
-        #     continue
         node = path[-1]
 
         # check if node in other dictionary
@@ -509,27 +508,20 @@ def bidirectional(S, G, neighborhoodFn, goalFn, visitFn, heuristicFn):
             for neighbor in neighborhood:
                 boo, rank = fu.stateInDict(neighbor, exploredFrom)
                 if not boo:
-                    exploredFrom[str(rank)] = 1
+                    exploredFrom[rank] = 1
                     newPath = path + [neighbor]
-                    pastCost = len(newPath)-1
+                    pastCost = (len(newPath)-1)/pastConstant
                     # goal = S[0], means distance to initial state
                     futureCost = heuristicFn(neighbor, goal=S[0])
                     totalCost = pastCost + futureCost
-                    frontierFrom.put((totalCost, newPath))
+                    if totalCost < BRANCH_BOUND:
+                        frontierFrom.put((totalCost, newPath))
     return [-1, None]
 
 
 
 if __name__ == "__main__":
-    RANDOM = True
-    # number of scrambles
-    N = 80
-    typez = ["test", "single", "profile"]
-    TYPE = typez[2]
-    numTests = 150
-
-
-
+    global totalTime
     global maxTime
     # for one way search:
     global explored
@@ -543,9 +535,27 @@ if __name__ == "__main__":
     global exploredFrom
 
     global GOAL_STATE
+    global BRANCH_BOUND
+
+    global pastConstant
+
+    RANDOM = True
+    # number of scrambles
+    N = 20
+    typez = ["test", "single", "profile"]
+    TYPE = typez[0]
+    numTests = 150
+    numCorrect = 0
 
     maxTime = 100
+
     GOAL_STATE = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+    BRANCH_BOUND = 86
+
+    # how much to divide the past cost by in biD search
+    # allows for longer paths to be prioritized, but solution could be found
+    # quicker
+    pastConstant = 1.3
 
     # load tables from pickle
     print("Loading TABLES from pickle...")
@@ -557,14 +567,15 @@ if __name__ == "__main__":
     vertWDRanks2 = TABLES[1]
     vertWDRanks3 = TABLES[2]
     vertWDRanks4 = TABLES[3]
-    print("Process time: " + str(pic_end-pic_begin))
+    print("Process time: " + str(pic_end-pic_begin) + "\n")
 
-
+    # totalEnd = totalStart is total time for entire program
+    totalStart = time.time()
     if TYPE=="test":
         # like: 5, 30, 100, failed
         timez = [[], [], [], []]
         for i in range(numTests):
-            print("test: " + str(i+1) + " / " + str(numTests), end = "\r")
+            print("running test {} / {}   ({} / {} found so far...)".format(str(i+1), str(numTests), str(numCorrect), str(i)), end="\r")
 
             exploredTo = {}
             explored = {}
@@ -590,10 +601,13 @@ if __name__ == "__main__":
                 timez[3].append(runTime)
             if 0 < runTime <=5:
                 timez[0].append(runTime)
+                numCorrect += 1
             if 5 < runTime <=30:
                 timez[1].append(runTime)
-            if 30 < runTime <=101:
+                numCorrect += 1
+            if 30 < runTime <= maxTime + 20:
                 timez[2].append(runTime)
+                numCorrect += 1
 
         # print("\nUGLY LIST: ")
         # print(timez)
@@ -655,3 +669,5 @@ if __name__ == "__main__":
 
     else:
         print("RUN TYPE ERROR")
+    totalEnd = time.time()
+    print("Total Time: {}".format(totalEnd - totalStart))

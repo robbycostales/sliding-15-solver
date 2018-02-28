@@ -2,6 +2,7 @@
 # Author: Robby Costales
 
 # Purpose: Contains many misc functions
+import numpy as np
 
 def numInCommon(list1, list2):
     """
@@ -13,11 +14,7 @@ def numInCommon(list1, list2):
     Returns:
         int : number of elements in common
     """
-    return len(list(set(list1).intersection(list2)))
-
-    # NOTE: current method more optimized than below:
-
-    # return len(list(set(list1) & set(list2)))
+    return len(set(list1).intersection(list2))
 
 
 def transpose(og):
@@ -30,9 +27,6 @@ def transpose(og):
         transpose
     """
     return [list(x) for x in zip(*og)]
-
-    # NUMPY VERSION:
-    # return list( np.array(og).T )
 
 
 def unFlatten(state):
@@ -59,7 +53,7 @@ def stateInDict(state, dictionary):
         boolean, rank (key of dictionary)
     """
     rank = rankPerm(state)
-    if str(rank) in dictionary:
+    if rank in dictionary:
         return True, rank
     else:
         return False, rank
@@ -81,7 +75,9 @@ def rankPerm(perm, inverse = None, m = None):
         # flattens 2d array
         perm = sum(perm, [])
 
+    return tuple(perm)
     return str(perm)
+
 
     # change all 0s to 5s
     for i in range(len(perm)):
@@ -89,8 +85,6 @@ def rankPerm(perm, inverse = None, m = None):
             perm[i] = 5
 
     # end of Robby's edits
-
-    return str(perm)
 
     # if the parameters are None, then this is the initial call, so set the values
     if inverse == None:
