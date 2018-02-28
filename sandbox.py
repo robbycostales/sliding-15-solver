@@ -12,9 +12,4 @@ import funcs as fu
 
 state = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 16, 14, 15, 12]
 
-start = time.time()
-for i in range(100000):
-    random.shuffle(state)
-    x = fu.rankPerm(state)
-end = time.time()
-print(end-start)
+print(fu.unFlatten(state))

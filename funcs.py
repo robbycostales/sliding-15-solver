@@ -15,6 +15,10 @@ def numInCommon(list1, list2):
     """
     return len(list(set(list1).intersection(list2)))
 
+    # NOTE: current method more optimized than below:
+
+    # return len(list(set(list1) & set(list2)))
+
 
 def transpose(og):
     """
@@ -27,6 +31,9 @@ def transpose(og):
     """
     return [list(x) for x in zip(*og)]
 
+    # NUMPY VERSION:
+    # return list( np.array(og).T )
+
 
 def unFlatten(state):
     """
@@ -37,13 +44,7 @@ def unFlatten(state):
     Returns:
         state : state in 4x4 form
     """
-    conv = []
-    for i in range(4):
-        temp = []
-        for j in range(4):
-            temp.append(state[4*i+j])
-        conv.append(temp)
-    return conv
+    return [state[0:4], state[4:8], state[8:12], state[12:16]]
 
 
 def stateInDict(state, dictionary):
@@ -80,6 +81,7 @@ def rankPerm(perm, inverse = None, m = None):
         # flattens 2d array
         perm = sum(perm, [])
 
+    return str(perm)
 
     # change all 0s to 5s
     for i in range(len(perm)):

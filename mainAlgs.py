@@ -13,6 +13,8 @@ import pickle
 # local
 import createTables as ct
 import funcs as fu
+# profiling
+import cProfile
 
 
 
@@ -252,7 +254,7 @@ def heuristicWD(state, goal=None, typ=4):
     """
 
     if goal==None:
-        goal = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+        goal = GOAL_STATE
 
     vertRank, m1 = convertWD(state, goal, "vert")
     horizRank, m2 = convertWD(state, goal, "horiz")
@@ -383,6 +385,8 @@ def chooseWDDict(state, ori="vert"):
     for i in range(4):
         if 16 in state[i] or 0 in state[i]:
             typ = i+1
+            break
+
     if typ == 1:
         return vertWDRanks1
     elif typ == 2:
@@ -520,8 +524,11 @@ if __name__ == "__main__":
     RANDOM = True
     # number of scrambles
     N = 80
-    TEST = True
+    typez = ["test", "single", "profile"]
+    TYPE = typez[2]
     numTests = 150
+
+
 
     global maxTime
     # for one way search:
@@ -535,7 +542,10 @@ if __name__ == "__main__":
     global exploredTo
     global exploredFrom
 
+    global GOAL_STATE
+
     maxTime = 100
+    GOAL_STATE = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
 
     # load tables from pickle
     print("Loading TABLES from pickle...")
@@ -550,7 +560,7 @@ if __name__ == "__main__":
     print("Process time: " + str(pic_end-pic_begin))
 
 
-    if TEST:
+    if TYPE=="test":
         # like: 5, 30, 100, failed
         timez = [[], [], [], []]
         for i in range(numTests):
@@ -593,8 +603,7 @@ if __name__ == "__main__":
         print("Num Under 30 secs: ", len(timez[0]) + len(timez[1]))
         print("Num Under 100 secs: ", len(timez[0]) + len(timez[1]) + len(timez[2]))
 
-
-    else:
+    elif TYPE=="single":
         exploredTo = {}
         explored = {}
         exploredFrom = {}
@@ -620,3 +629,29 @@ if __name__ == "__main__":
 
         print15s(path)
         print("runTime: ", runTime)
+
+    elif TYPE=="profile":
+        print("TYPE = Profile")
+
+        exploredTo = {}
+        explored = {}
+        exploredFrom = {}
+        # Make a random state.
+        state = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+        goal = copy.deepcopy(state)
+
+        if RANDOM:
+            # print("creating random state")
+            random.shuffle(state)
+            while not isSolvable(state):
+                random.shuffle(state)
+        else:
+            state = scrambler(state, N)
+            # print("created "+ str(n) +"-scrambled state")
+
+        print("starting profile...")
+
+        cProfile.run("bidirectional([state], [goal], neighbors, isGoal, doNothing, heuristicWD)")
+
+    else:
+        print("RUN TYPE ERROR")
