@@ -10,6 +10,7 @@ from queue import PriorityQueue
 import time
 import copy
 import pickle
+from statistics import median
 # local
 import createTables as ct
 import funcs as fu
@@ -474,7 +475,7 @@ def bidirectional(S, G, neighborhoodFn, goalFn, visitFn, heuristicFn):
                 if not boo:
                     exploredTo[rank] = 1
                     newPath = path + [neighbor]
-                    pastCost = (len(newPath)-1)/pastConstant
+                    pastCost = (len(newPath)-1)//pastConstant
                     # goal = None means distance to normal goal state
                     futureCost = heuristicFn(neighbor, goal=None)
                     totalCost = pastCost + futureCost
@@ -510,7 +511,7 @@ def bidirectional(S, G, neighborhoodFn, goalFn, visitFn, heuristicFn):
                 if not boo:
                     exploredFrom[rank] = 1
                     newPath = path + [neighbor]
-                    pastCost = (len(newPath)-1)/pastConstant
+                    pastCost = (len(newPath)-1)//pastConstant
                     # goal = S[0], means distance to initial state
                     futureCost = heuristicFn(neighbor, goal=S[0])
                     totalCost = pastCost + futureCost
@@ -539,43 +540,123 @@ if __name__ == "__main__":
 
     global pastConstant
 
-    RANDOM = True
-    # number of scrambles
-    N = 20
-    typez = ["test", "single", "profile"]
-    TYPE = typez[0]
-    numTests = 150
-    numCorrect = 0
+    for constant in [1]:
+        print(constant)
+        RANDOM = True
+        # number of scrambles
+        N = 20
+        typez = ["test", "single", "profile"]
+        TYPE = typez[0]
+        numTests = 100
+        numCorrect = 0
 
-    maxTime = 100
+        maxTime = 100
 
-    GOAL_STATE = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-    BRANCH_BOUND = 86
+        GOAL_STATE = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+        BRANCH_BOUND = 80
 
-    # how much to divide the past cost by in biD search
-    # allows for longer paths to be prioritized, but solution could be found
-    # quicker
-    pastConstant = 1.3
+        # how much to divide the past cost by in biD search
+        # allows for longer paths to be prioritized, but solution could be found
+        # quicker
+        pastConstant = constant
 
-    # load tables from pickle
-    print("Loading TABLES from pickle...")
-    pic_begin = time.time()
-    pickle_in = open("TABLES","rb")
-    TABLES = pickle.load(pickle_in)
-    pic_end = time.time()
-    vertWDRanks1 = TABLES[0]
-    vertWDRanks2 = TABLES[1]
-    vertWDRanks3 = TABLES[2]
-    vertWDRanks4 = TABLES[3]
-    print("Process time: " + str(pic_end-pic_begin) + "\n")
+        # load tables from pickle
+        print("Loading TABLES from pickle...")
+        pic_begin = time.time()
+        pickle_in = open("TABLES","rb")
+        TABLES = pickle.load(pickle_in)
+        pic_end = time.time()
+        vertWDRanks1 = TABLES[0]
+        vertWDRanks2 = TABLES[1]
+        vertWDRanks3 = TABLES[2]
+        vertWDRanks4 = TABLES[3]
+        print("Process time: " + str(pic_end-pic_begin) + "\n")
 
-    # totalEnd = totalStart is total time for entire program
-    totalStart = time.time()
-    if TYPE=="test":
-        # like: 5, 30, 100, failed
-        timez = [[], [], [], []]
-        for i in range(numTests):
-            print("running test {} / {}   ({} / {} found so far...)".format(str(i+1), str(numTests), str(numCorrect), str(i)), end="\r")
+        # totalEnd = totalStart is total time for entire program
+        totalStart = time.time()
+        if TYPE=="test":
+            # like: 5, 30, 100, failed
+            timez = [[], [], [], []]
+            # for calculations at the end
+            pathLengths = []
+
+            for i in range(numTests):
+                print("running test {} / {}   ({} / {} found so far...)".format(str(i+1), str(numTests), str(numCorrect), str(i)), end="\r")
+
+                exploredTo = {}
+                explored = {}
+                exploredFrom = {}
+                # Make a random state.
+                state = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+                goal = copy.deepcopy(state)
+
+                if RANDOM:
+                    # print("creating random state")
+                    random.shuffle(state)
+                    while not isSolvable(state):
+                        random.shuffle(state)
+                else:
+                    state = scrambler(state, N)
+                    # print("created "+ str(n) +"-scrambled state")
+
+                # [runTime, path] = AStar([state], neighbors, isGoal, doNothing, heuristicWD)
+                [runTime, path] = bidirectional([state], [goal], neighbors, isGoal, doNothing, heuristicWD)
+
+                if path != None:
+                    pathLengths.append(len(path))
+
+                if runTime < 0:
+                    timez[3].append(runTime)
+                if 0 < runTime <=5:
+                    timez[0].append(runTime)
+                    numCorrect += 1
+                if 5 < runTime <=30:
+                    timez[1].append(runTime)
+                    numCorrect += 1
+                if 30 < runTime <= maxTime + 20:
+                    timez[2].append(runTime)
+                    numCorrect += 1
+
+            # print("\nUGLY LIST: ")
+            # print(timez)
+
+            print("\nNum Unsolved: ", len(timez[3]))
+            print("Num Under 5 secs: ", len(timez[0]))
+            print("Num Under 30 secs: ", len(timez[0]) + len(timez[1]))
+            print("Num Under 100 secs: ", len(timez[0]) + len(timez[1]) + len(timez[2]))
+
+            if len(pathLengths) > 0:
+                print("Median path length: {}".format(median(pathLengths)))
+
+        elif TYPE=="single":
+            exploredTo = {}
+            explored = {}
+            exploredFrom = {}
+            # Make a random state.
+            state = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+            goal = copy.deepcopy(state)
+
+            if RANDOM:
+                print("creating random state")
+                random.shuffle(state)
+                while not isSolvable(state):
+                    random.shuffle(state)
+            else:
+                state = scrambler(state, N)
+                print("created "+ str(N) +"-scrambled state")
+
+
+            print15(state)
+            print("has rank " + str(fu.rankPerm(state)))
+
+            # [runTime, path] = AStar([state], neighbors, isGoal, doNothing, heuristicWD)
+            [runTime, path] = bidirectional([state], [goal], neighbors, isGoal, doNothing, heuristicWD)
+
+            print15s(path)
+            print("runTime: ", runTime)
+
+        elif TYPE=="profile":
+            print("TYPE = Profile")
 
             exploredTo = {}
             explored = {}
@@ -593,81 +674,11 @@ if __name__ == "__main__":
                 state = scrambler(state, N)
                 # print("created "+ str(n) +"-scrambled state")
 
-            # [runTime, path] = AStar([state], neighbors, isGoal, doNothing, heuristicWD)
-            [runTime, path] = bidirectional([state], [goal], neighbors, isGoal, doNothing, heuristicWD)
+            print("starting profile...")
 
+            cProfile.run("bidirectional([state], [goal], neighbors, isGoal, doNothing, heuristicWD)")
 
-            if runTime < 0:
-                timez[3].append(runTime)
-            if 0 < runTime <=5:
-                timez[0].append(runTime)
-                numCorrect += 1
-            if 5 < runTime <=30:
-                timez[1].append(runTime)
-                numCorrect += 1
-            if 30 < runTime <= maxTime + 20:
-                timez[2].append(runTime)
-                numCorrect += 1
-
-        # print("\nUGLY LIST: ")
-        # print(timez)
-
-        print("\nNum Unsolved: ", len(timez[3]))
-        print("Num Under 5 secs: ", len(timez[0]))
-        print("Num Under 30 secs: ", len(timez[0]) + len(timez[1]))
-        print("Num Under 100 secs: ", len(timez[0]) + len(timez[1]) + len(timez[2]))
-
-    elif TYPE=="single":
-        exploredTo = {}
-        explored = {}
-        exploredFrom = {}
-        # Make a random state.
-        state = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        goal = copy.deepcopy(state)
-
-        if RANDOM:
-            print("creating random state")
-            random.shuffle(state)
-            while not isSolvable(state):
-                random.shuffle(state)
         else:
-            state = scrambler(state, N)
-            print("created "+ str(N) +"-scrambled state")
-
-
-        print15(state)
-        print("has rank " + str(fu.rankPerm(state)))
-
-        # [runTime, path] = AStar([state], neighbors, isGoal, doNothing, heuristicWD)
-        [runTime, path] = bidirectional([state], [goal], neighbors, isGoal, doNothing, heuristicWD)
-
-        print15s(path)
-        print("runTime: ", runTime)
-
-    elif TYPE=="profile":
-        print("TYPE = Profile")
-
-        exploredTo = {}
-        explored = {}
-        exploredFrom = {}
-        # Make a random state.
-        state = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        goal = copy.deepcopy(state)
-
-        if RANDOM:
-            # print("creating random state")
-            random.shuffle(state)
-            while not isSolvable(state):
-                random.shuffle(state)
-        else:
-            state = scrambler(state, N)
-            # print("created "+ str(n) +"-scrambled state")
-
-        print("starting profile...")
-
-        cProfile.run("bidirectional([state], [goal], neighbors, isGoal, doNothing, heuristicWD)")
-
-    else:
-        print("RUN TYPE ERROR")
-    totalEnd = time.time()
-    print("Total Time: {}".format(totalEnd - totalStart))
+            print("RUN TYPE ERROR")
+        totalEnd = time.time()
+        print("Total Time: {}".format(totalEnd - totalStart))
