@@ -11,7 +11,8 @@ import time
 import copy
 import pickle
 # local
-import funcs as fu
+from misc import *
+from heuristics import *
 
 
 
@@ -42,7 +43,7 @@ def BFS(S, neighborhoodFn):
         # put the starting state in the frontier
         frontier.put((0, [s]))
         # set to 0 because the starting state is the goal state
-        explored[fu.rankPerm(s)] = 0
+        explored[rankPerm(s)] = 0
 
     while frontier.qsize() > 0:
         # while there is stuff in the frontier
@@ -55,8 +56,8 @@ def BFS(S, neighborhoodFn):
         neighborhood = neighborhoodFn(node)
         # we get list of neighbors of our state
         for neighbor in neighborhood:
-            boo, rank = fu.stateInDict(neighbor, explored)
-            if rank not in explored:
+            boo, rank = stateInDict(neighbor, explored)
+            if not boo:
                 # val is the current distance from the goal, so cost increments by 1
                 # cost = val + 1
                 newPath = path + [neighbor]
@@ -68,7 +69,7 @@ def BFS(S, neighborhoodFn):
     return [currentTime - startTime, None]
 
 
-def neighbors(state):
+def neighborsWD(state):
     """
     Finds VERTICAL neighbors of the state (can submit transpose of the state
     into this function, then transpose result to find horizontal neighbors)
@@ -171,7 +172,7 @@ def createTables(typ=4):
                     [0, 0, 4, 0],
                     [0, 0, 0, 3]]
 
-    [runTime, path] = BFS([initial], neighbors)
+    [runTime, path] = BFS([initial], neighborsWD)
 
     return explored
 

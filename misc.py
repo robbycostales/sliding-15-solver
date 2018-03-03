@@ -2,7 +2,65 @@
 # Author: Robby Costales
 
 # Purpose: Contains many misc functions
-import numpy as np
+
+import ast # for a few string things
+
+
+def levelInput():
+    """
+    Asks for user input for a state (in form of list as string) and converts
+    to list
+
+    Returns:
+        state that user input
+    """
+    string = input("Please enter the a list corresponding to the level:\n    ")
+    state = ast.literal_eval(string)
+    print(state)
+    return state
+
+
+def isSolvable(state):
+    """
+    Checks if given S15 state is solvable
+
+    Args:
+        state : 1d form
+    Returns:
+        boolean
+    """
+    # find blank position
+    z = state.index(16)
+
+    invs = 0
+    for i in range(15):
+        if i == z: continue
+        for j in range(i+1,16):
+            if j == z: continue
+            if state[i] > state[j]:
+                invs += 1
+
+    return (i//4 + invs) % 2 == 1
+
+
+def doNothing(path):
+    """
+    Visit function for a path that literally does nothing...
+    """
+    pass
+
+
+def isGoal(state):
+    """
+    Checks if given state is a goal state for S15
+
+    Args:
+        state : 1d python list representation of S15
+    Returns:
+        boolean : True of state is goal, False otherwise
+    """
+    return state == [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+
 
 def numInCommon(list1, list2):
     """
@@ -27,6 +85,11 @@ def transpose(og):
         transpose
     """
     return [list(x) for x in zip(*og)]
+
+
+def flatten(state):
+    return sum(state, [])
+
 
 
 def unFlatten(state):
@@ -74,6 +137,10 @@ def rankPerm(perm, inverse = None, m = None):
     if type(perm[0]) == type([]):
         # flattens 2d array
         perm = sum(perm, [])
+
+    if 16 in perm:
+        perm[perm.index(16)] = 0
+
 
     return tuple(perm)
     return str(perm)
