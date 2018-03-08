@@ -107,40 +107,40 @@ def convertWD(state, goal = None, orientation="vert"):
         goal = transpose(goal)
         conv = transpose(conv)
 
-    # check intersection in each row, create 1-D list to rank
-    ints = []
-    for i in conv:
-        for j in goal:
-                ints.append(len(set(i).intersection(j)))
-
-
-    # find rank of the WD state created
-    rank = rankPerm(ints)
-    return rank
-
-
-    # # JR'S STUFF
-    # for i in range(16):
-    #     doNothing([])
+    # # check intersection in each row, create 1-D list to rank
+    # ints = []
+    # for i in conv:
+    #     for j in goal:
+    #             ints.append(len(set(i).intersection(j)))
     #
     #
-    # matrix = [0] * 4
-    # for i in range(4):
-    #     matrix[i] = [0] * 4
-    #
-    # for row in range(4):
-    #     for col in range(4):
-    #         index = 4 * row + col
-    #         value = state[index]
-    #         if value == 16:
-    #             continue
-    #         elif value in goal[0]:
-    #             matrix[row][0] += 1
-    #         elif value in goal[1]:
-    #             matrix[row][1] += 1
-    #         elif value in goal[2]:
-    #             matrix[row][2] += 1
-    #         elif value in goal[3]:
-    #             matrix[row][3] += 1
-    # rank = rankPerm(matrix)
+    # # find rank of the WD state created
+    # rank = rankPerm(ints)
     # return rank
+
+
+    # JR'S STUFF
+    for i in range(16):
+        doNothing([])
+
+
+    matrix = [0] * 4
+    for i in range(4):
+        matrix[i] = [0] * 4
+
+    for row in range(4):
+        for col in range(4):
+            index = 4 * row + col
+            value = state[index]
+            if value == 16:
+                continue
+            elif value in goal[0]:
+                matrix[row][0] += 1
+            elif value in goal[1]:
+                matrix[row][1] += 1
+            elif value in goal[2]:
+                matrix[row][2] += 1
+            elif value in goal[3]:
+                matrix[row][3] += 1
+    rank = rankPerm(matrix)
+    return rank

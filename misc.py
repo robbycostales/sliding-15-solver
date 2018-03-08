@@ -40,7 +40,7 @@ def isSolvable(state):
             if state[i] > state[j]:
                 invs += 1
 
-    return (i//4 + invs) % 2 == 1
+    return (z//4 + invs) % 2 == 1
 
 
 def doNothing(path):

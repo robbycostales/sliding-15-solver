@@ -449,7 +449,7 @@ if __name__ == "__main__":
     global BRANCH_BOUND
     global pastCostConst
     global fromConst
-    BRANCH_BOUND = 60 # cost
+    BRANCH_BOUND = 81 # cost
     pastCostConst = 1
     fromConst = 1
 
