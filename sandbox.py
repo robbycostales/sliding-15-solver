@@ -6,7 +6,7 @@ import time
 import random
 
 # local
-from algs import *
+from run import *
 from createWD import *
 from heuristics import *
 from misc import *
@@ -17,9 +17,11 @@ flat2 = [1,2,4,3,6,5,7,8,9,10,11,12,13,14,15,16]
 
 x = []
 for i in range(100):
-    q = copy.deepcopy(flat)
-    random.shuffle(q)
-    x.append(q)
+    state = copy.deepcopy(flat)
+    random.shuffle(state)
+    while not isSolvable(state):
+        random.shuffle(state)
+    x.append(state)
 
 for i in range(len(x)):
     print(str(x[i]) + ",")
