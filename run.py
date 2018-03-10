@@ -554,7 +554,7 @@ if __name__ == "__main__":
     # NOTE: basic parameters
     RANDOM = True
     numScrambles = 1000 # scrambles
-    TYPE = t[2] # type
+    TYPE = t[0] # type
     numTests = 100 # tests
     maxTime = 100 # seconds
     global BRANCH_BOUND
@@ -564,6 +564,7 @@ if __name__ == "__main__":
     pastCostConst = 1
     fromConst = 1
 
+    # HARD CODED STATES CURRENTLY DISABLED
     STATES =  [[10, 16, 14, 1, 13, 5, 8, 3, 4, 12, 11, 2, 15, 9, 6, 7],
 [11, 12, 14, 3, 1, 2, 4, 8, 16, 13, 7, 5, 15, 10, 9, 6],
 [6, 9, 7, 15, 13, 5, 4, 16, 10, 14, 1, 11, 2, 3, 12, 8],
