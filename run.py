@@ -22,7 +22,7 @@ import heapq as hq
 
 
 
-def neighbors(state):
+def neighbors(state, vertMat, horizMat, goal):
     """
     Finds neighbors of an S15 state
 
@@ -41,25 +41,85 @@ def neighbors(state):
         i = state.index(0)
         state[i] = 16
 
-    # move blank left?
+    # move blank left? WIP
     if i % 4 != 0:
+        # print("Left")
+        # only change horiz
+        # horizMatMod = copy.deepcopy(horizMat)
+        horizMatMod = horizMat[:]
+        # find index of piece replaced by 16 (currently left of 16) in goal
+        iC = goal.index(state[i-1])
+        # find column of of piece replaced by 16 ( in goal)
+        cC = iC % 4
+        # find column of 16 in state
+        c16 = i % 4
+        # since 16 is moved left, we add to lower
+        horizMatMod[cC+c16*4] += 1
+        # since 16 is moved left, we subtract from upper
+        horizMatMod[cC+(c16-1)*4] -= 1
+
         newState = state[:i-1] + [state[i],state[i-1]] + state[i+1:]
-        neighborhood.append(newState)
+        neighborhood.append((newState, vertMat, horizMatMod))
 
-    # move blank right?
+    # move blank right? WIP
     if i % 4 != 3:
+        # print("Right")
+        # only change horiz
+        # horizMatMod = copy.deepcopy(horizMat)
+        horizMatMod = horizMat[:]
+        # find index of piece replaced by 16 (currently left of 16) in goal
+        iC = goal.index(state[i+1])
+        # find column of of piece replaced by 16 ( in goal)
+        cC = iC % 4
+        # find column of 16 in state
+        c16 = i % 4
+        # since 16 is moved left, we add to lower
+        horizMatMod[cC+c16*4] += 1
+        # since 16 is moved left, we subtract from upper
+        horizMatMod[cC+(c16+1)*4] -= 1
+
         newState = state[:i] + [state[i+1],state[i]] + state[i+2:]
-        neighborhood.append(newState)
+        neighborhood.append((newState, vertMat, horizMatMod))
 
-    # move blank up?
+    # move blank up? WIP
     if i > 3:
-        newState = state[:i-4] + [state[i]] + state[i-3:i] + [state[i-4]] + state[i+1:]
-        neighborhood.append(newState)
+        # print("Up")
+        # only change vert
+        # vertMatMod = copy.deepcopy(vertMat)
+        vertMatMod = vertMat[:]
+        # find index of piece replaced by 16 (currently above 16) in goal
+        iC = goal.index(state[i - 4])
+        # find row of of piece replaced by 16 ( in goal)
+        rC = iC // 4
+        # find row of 16 in state
+        r16 = i // 4
+        # since 16 is moved up, we add to lower
+        vertMatMod[rC+(r16-1)*4] -= 1
+        # since 16 is moved up, we subtract from upper
+        vertMatMod[rC+r16*4] += 1
 
-    # move blank down?
+        newState = state[:i-4] + [state[i]] + state[i-3:i] + [state[i-4]] + state[i+1:]
+        neighborhood.append((newState, vertMatMod, horizMat))
+
+    # move blank down? WIP
     if i < 12:
+        # print("Down")
+        # only change vert
+        # vertMatMod = copy.deepcopy(vertMat)
+        vertMatMod = vertMat[:]
+        # find index of piece replaced by 16 (currently below 16) in goal
+        iC = goal.index(state[i + 4])
+        # find row of of piece replaced by 16 (in goal)
+        rC = iC // 4
+        # find row of 16 in state
+        r16 = i // 4
+        # since 16 is moved down, we subtract from lower
+        vertMatMod[rC+(r16+1)*4] -= 1
+        # since 16 is moved down, we add to upper
+        vertMatMod[rC+(r16)*4] += 1
+
         newState = state[:i] + [state[i+4]] + state[i+1:i+4] + [state[i]] + state[i+5:]
-        neighborhood.append(newState)
+        neighborhood.append((newState, vertMatMod, horizMat))
 
     return neighborhood
 
@@ -182,6 +242,60 @@ def AStar(S, neighborhoodFn, goalFn, visitFn, heuristicFn):
     return [-1, None]
 
 
+def convertWD(state, goal = None, orientation="vert"):
+    """
+    Given S15 state, converts to WD state (default is for vertical)
+
+    Args:
+        state : 1-d python representation of S15 state
+        goal : 1-d rep of goal state
+        orientation : vertical (vert) vs horizontal (horiz) walking distance
+    Returns:
+        rank
+
+        rank is rank of WD state (to be searched in table created by
+        createTables), and state is just the converted state in matrix form.
+
+    """
+
+    # zero because we want 4, 4, 4, 3 in goal rep not 4, 4, 4, 4
+    # would normally be 16
+    if goal == None:
+        goal =  [[1, 2, 3, 4],
+                [5, 6, 7, 8],
+                [9, 10, 11, 12],
+                [13, 14, 15, 0]]
+    else:
+        # MUST REPLACE 16 WITH 0 SO WE GET THE NEEDED 4, 4, 4, 3 or other permuation
+        # otherwise we get 4, 4, 4, 4
+        if 16 in goal:
+            goal[goal.index(16)] = 0
+
+        goal = unFlatten(goal)
+
+    # need to make sure one has 16, other has 0
+    if 0 in state:
+        state[state.index(0)] = 16
+
+    # converting 1-list to 2-list
+    conv = unFlatten(state)
+
+    if orientation == "horiz":
+        goal = transpose(goal)
+        conv = transpose(conv)
+
+    # # check intersection in each row, create 1-D list to rank
+    ints = []
+    for i in conv:
+        for j in goal:
+                ints.append(len(set(i).intersection(j)))
+
+
+    # find rank of the WD state created
+    rank = rankPerm(ints)
+    return rank, ints
+
+
 # function here because needs dictionaries
 def chooseWDDict(state, ori="vert"):
     """
@@ -238,33 +352,25 @@ def heuristicWD(state, goal=None, typ=4):
     if goal==None:
         goal = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
 
-    # try:
-    #     vertWDRanks = chooseWDDict(goal, ori="vert")
-    #     vertRank = convertWD(state, goal, "vert")
-    #     x = vertWDRanks[vertRank]
-    # except:
-    #     # try other orientation
-    #     raise
-    #     print("vert error in heuristicWD")
-    #     x = 35
     vertWDRanks = chooseWDDict(goal, ori="vert")
-    vertRank = convertWD(state, goal, "vert")
+    vertRank, vertMat = convertWD(state, goal, "vert")
     x = vertWDRanks[vertRank]
 
-    # try:
-    #     vertWDRanks = chooseWDDict(goal, ori="horiz")
-    #     horizRank = convertWD(state, goal, "horiz")
-    #     y = vertWDRanks[horizRank]
-    # except:
-    #     # try other orientation
-    #     raise
-    #     print("horiz error in heuristicWD")
-    #     y = 35
-
     vertWDRanks = chooseWDDict(goal, ori="horiz")
-    horizRank = convertWD(state, goal, "horiz")
+    horizRank, horizMat = convertWD(state, goal, "horiz")
     y = vertWDRanks[horizRank]
 
+    return x+y, vertMat, horizMat
+
+
+def neighborsWD(vertMat, horizMat, goal=None):
+    if goal==None:
+        goal = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+    vertWDRanks = chooseWDDict(goal, ori="vert")
+    x = vertWDRanks[rankPerm(vertMat)]
+
+    vertWDRanks = chooseWDDict(goal, ori="horiz")
+    y = vertWDRanks[rankPerm(horizMat)]
     return x+y
 
 
@@ -314,15 +420,16 @@ def bidirectional(S, G, neighborhoodFn, goalFn, visitFn, heuristicFn):
     # put initial state's path in TO queue
     for s in S:
         # frontierTo.put((0, [s]))
-        hq.heappush(frontierTo, (0, [s]))
+        rank, vert, horiz = heuristicWD(s, goal=G[0])
+        hq.heappush(frontierTo, (0, ([s], vert, horiz)))
         exploredTo[rankPerm(s)] = 1
 
     # put initial state's path in TO queue
     for g in G:
         # frontierFrom.put((0, [g]))
-        hq.heappush(frontierFrom, (0, [g]))
+        rank, vert, horiz = heuristicWD(g, goal=S[0])
+        hq.heappush(frontierFrom, (0, ([g], vert, horiz)))
         exploredFrom[rankPerm(g)] = 1
-
 
     count = 0
     # while frontierFrom.qsize() > 0 and frontierTo.qsize() > 0:
@@ -337,7 +444,7 @@ def bidirectional(S, G, neighborhoodFn, goalFn, visitFn, heuristicFn):
         ### TO ------->>>>>
         # pull from TO queue
         # (val, path) = frontierTo.get()
-        (val, path) = hq.heappop(frontierTo)
+        (val, (path, vertMat, horizMat)) = hq.heappop(frontierTo)
 
 
         node = path[-1]
@@ -345,13 +452,14 @@ def bidirectional(S, G, neighborhoodFn, goalFn, visitFn, heuristicFn):
         # check if node in other dictionary
         boo, rank = stateInDict(node, exploredFrom)
         if boo:
+            currentTime = time.time()
             # have our final pathTo
             pathTo = path
             # find the pathFrom that has this overlapping node
             # while frontierFrom.qsize() > 0:
             while len(frontierFrom) > 0:
                 # (_, pathCheck) = frontierFrom.get()
-                (_, pathCheck) = hq.heappop(frontierFrom)
+                (_, (pathCheck, _, _)) = hq.heappop(frontierFrom)
                 for i in range(len(pathCheck)):
                     if rank == rankPerm(pathCheck[i]):
                         # we found our pathFrom
@@ -359,39 +467,41 @@ def bidirectional(S, G, neighborhoodFn, goalFn, visitFn, heuristicFn):
                         # need to merge these paths on i (i cant appear in both)
                         finalPath = pathTo + pathFrom[i+1::-1]
                         visitFn(finalPath)
-                        currentTime = time.time()
+
                         return [currentTime - startTime, finalPath]
         else:
-            neighborhood = neighborhoodFn(node)
-            for neighbor in neighborhood:
+            neighborhood = neighborhoodFn(node, vertMat, horizMat, G[0])
+            for tup in neighborhood:
+                (neighbor, vert, horiz) = tup
                 boo, rank = stateInDict(neighbor, exploredTo)
                 if not boo:
                     exploredTo[rank] = 1
                     newPath = path + [neighbor]
                     pastCost = (len(newPath)-1)//fConst
-                    futureCost = heuristicFn(neighbor, goal=None)
+                    futureCost = neighborsWD(vert, horiz, goal=None)
                     totalCost = pastCost + futureCost
                     if len(newPath) < bBound:
                         # frontierTo.put((totalCost, newPath))
-                        hq.heappush(frontierTo, (totalCost, newPath))
+                        hq.heappush(frontierTo, (totalCost, (newPath, vert, horiz)))
 
         ### <<<<<------- FROM
         # pull from FROM queue
         if count % fromConst == 0:
             # (val, path) = frontierFrom.get()
-            (val, path) = hq.heappop(frontierFrom)
+            (val, (path, vertMat, horizMat)) = hq.heappop(frontierFrom)
             node = path[-1]
 
             # check if node in other dictionary
             boo, rank = stateInDict(node, exploredTo)
             if boo:
+                currentTime = time.time()
                 # have our final pathFrom
                 pathFrom = path
                 # find the pathTo that has this overlapping node
                 # while frontierTo.qsize() > 0:
                 while len(frontierTo) > 0:
                     # (_, pathCheck) = frontierTo.get()
-                    (_, pathCheck) = hq.heappop(frontierTo)
+                    (_, (pathCheck, _, _)) = hq.heappop(frontierTo)
                     for i in range(len(pathCheck)):
                         if rank == rankPerm(pathCheck[i]):
                             # we found our pathTo
@@ -399,20 +509,21 @@ def bidirectional(S, G, neighborhoodFn, goalFn, visitFn, heuristicFn):
                             # need to merge these paths on i (i cant appear in both)
                             finalPath = pathTo[:i] + pathFrom[::-1]
                             visitFn(finalPath)
-                            currentTime = time.time()
+
                             return [currentTime - startTime, finalPath]
             else:
-                neighborhood = neighborhoodFn(node)
-                for neighbor in neighborhood:
+                neighborhood = neighborhoodFn(node, vertMat, horizMat, S[0])
+                for tup in neighborhood:
+                    (neighbor, vert, horiz) = tup
                     boo, rank = stateInDict(neighbor, exploredFrom)
                     if not boo:
                         exploredFrom[rank] = 1
                         newPath = path + [neighbor]
                         pastCost = (len(newPath)-1)//fConst
-                        futureCost = heuristicFn(neighbor, goal=S[0])
+                        futureCost = neighborsWD(vert, horiz, goal=S[0])
                         totalCost = pastCost + futureCost
                         if len(newPath) < bBound:
-                            hq.heappush(frontierFrom, (totalCost, newPath))
+                            hq.heappush(frontierFrom, (totalCost, (newPath, vert, horiz)))
                             # frontierFrom.put((totalCost, newPath))
 
     print("function ended error")
@@ -443,8 +554,8 @@ if __name__ == "__main__":
     # NOTE: basic parameters
     RANDOM = True
     numScrambles = 1000 # scrambles
-    TYPE = t[0] # type
-    numTests = 10 # tests
+    TYPE = t[2] # type
+    numTests = 100 # tests
     maxTime = 100 # seconds
     global BRANCH_BOUND
     global pastCostConst
@@ -607,7 +718,7 @@ if __name__ == "__main__":
             else:
                 state = scrambler(state, numScrambles)
                 # print("created "+ str(n) +"-scrambled state")
-            state = STATES[i]
+            # state = STATES[i]
 
             print15(state)
             print("has rank " + str(rankPerm(state)))
@@ -702,6 +813,12 @@ if __name__ == "__main__":
         else:
             state = scrambler(state, numScrambles)
             # print("created "+ str(n) +"-scrambled state")
+
+        # for 100 second profile, make unsolvable
+        x = state[-1]
+        y = state[-2]
+        state[-2] = x
+        state[-1] = y
 
         print("starting profile...")
         cProfile.run("bidirectional([state], [goal], neighbors, isGoal, doNothing, heuristicWD)")
