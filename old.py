@@ -219,6 +219,59 @@ def chooseWDDict(state, ori="vert"):
     else:
         return -1
 
+def convertWD(state, goal = None, orientation="vert"):
+    """
+    Given S15 state, converts to WD state (default is for vertical)
+
+    Args:
+        state : 1-d python representation of S15 state
+        goal : 1-d rep of goal state
+        orientation : vertical (vert) vs horizontal (horiz) walking distance
+    Returns:
+        rank
+
+        rank is rank of WD state (to be searched in table created by
+        createTables), and state is just the converted state in matrix form.
+
+    """
+
+    # zero because we want 4, 4, 4, 3 in goal rep not 4, 4, 4, 4
+    # would normally be 16
+    if goal == None:
+        goal =  [[1, 2, 3, 4],
+                [5, 6, 7, 8],
+                [9, 10, 11, 12],
+                [13, 14, 15, 0]]
+    else:
+        # MUST REPLACE 16 WITH 0 SO WE GET THE NEEDED 4, 4, 4, 3 or other permuation
+        # otherwise we get 4, 4, 4, 4
+        if 16 in goal:
+            goal[goal.index(16)] = 0
+
+        goal = unFlatten(goal)
+
+    # need to make sure one has 16, other has 0
+    if 0 in state:
+        state[state.index(0)] = 16
+
+    # converting 1-list to 2-list
+    conv = unFlatten(state)
+
+    if orientation == "horiz":
+        goal = transpose(goal)
+        conv = transpose(conv)
+
+    # # check intersection in each row, create 1-D list to rank
+    ints = []
+    for i in conv:
+        for j in goal:
+                ints.append(len(set(i).intersection(j)))
+
+
+    # find rank of the WD state created
+    rank = rankPerm(ints)
+    return rank, ints
+
 
 # function here because we need the dictionaries
 def heuristicWD(state, goal=None, typ=4):
@@ -632,11 +685,11 @@ if __name__ == "__main__":
     numTests = 20 # tests
     maxTime = 100 # seconds
     global BRANCH_BOUND
-    BRANCH_BOUND = 200 # cost
+    BRANCH_BOUND = 100 # cost
     global pastCostConst
     pastCostConst = 1
     global pastCostConst2
-    pastCostConst2 = 1
+    pastCostConst2 = 3
     global intervals
     INTERVALS = 10 # how many seconds between each secondary search
     global stopUNDER
